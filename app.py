@@ -95,6 +95,53 @@ def divide(num1, num2):
     })
 
 # ----------------------------
+# Routes table route
+# ----------------------------
+@app.route("/routes")
+def routes():
+    """
+    Returns a table of all endpoints, their description, and example usage.
+    """
+    routes_table = [
+        {
+            "endpoint": "/",
+            "description": "Home route",
+            "example": "/"
+        },
+        {
+            "endpoint": "/hello",
+            "description": "Returns a greeting message",
+            "example": "/hello"
+        },
+        {
+            "endpoint": "/grade/<score>",
+            "description": "Returns grade letter and pass/fail status",
+            "example": "/grade/85"
+        },
+        {
+            "endpoint": "/add/<num1>/<num2>",
+            "description": "Returns the sum of two numbers",
+            "example": "/add/5/3"
+        },
+        {
+            "endpoint": "/subtract/<num1>/<num2>",
+            "description": "Returns the difference of two numbers",
+            "example": "/subtract/10/4"
+        },
+        {
+            "endpoint": "/multiply/<num1>/<num2>",
+            "description": "Returns the product of two numbers",
+            "example": "/multiply/6/7"
+        },
+        {
+            "endpoint": "/divide/<num1>/<num2>",
+            "description": "Returns the division of two numbers (handles division by zero)",
+            "example": "/divide/10/2"
+        }
+    ]
+    return jsonify({"routes": routes_table})
+
+# ----------------------------
 # Run the app
 # ----------------------------
 if __name__ == "__main__":
