@@ -1,40 +1,41 @@
-from flask import Flask, jsonify, render_template_string
+from flask import Flask, jsonify, request, render_template_string
 
 app = Flask(__name__)
 
-# ----------------------------
-# HTML UI
-# ----------------------------
+students = []
+
 html = """
+
 <!DOCTYPE html>
 <html>
 <head>
-<title>Student Grade API</title>
+
+<title>Student Grade System</title>
 
 <style>
+
 body{
 font-family: Arial;
-background:#f0f2f5;
+background:#f4f4f4;
 text-align:center;
 }
 
 .container{
-width:650px;
+width:800px;
 margin:auto;
 background:white;
-padding:25px;
+padding:20px;
 border-radius:10px;
 box-shadow:0px 0px 10px gray;
 }
 
 input{
-padding:10px;
+padding:8px;
 margin:5px;
-width:200px;
 }
 
 button{
-padding:10px 15px;
+padding:8px 12px;
 margin:5px;
 cursor:pointer;
 background:#007bff;
@@ -43,14 +44,17 @@ border:none;
 border-radius:5px;
 }
 
-button:hover{
-background:#0056b3;
+table{
+width:100%;
+margin-top:20px;
+border-collapse:collapse;
 }
 
-.result{
-margin-top:10px;
-font-weight:bold;
+table, th, td{
+border:1px solid gray;
+padding:8px;
 }
+
 </style>
 
 </head>
@@ -59,205 +63,169 @@ font-weight:bold;
 
 <div class="container">
 
-<h1>Flask Student Grade System</h1>
+<h1>Student Grade Management System</h1>
 
-<hr>
+<h3>Add Student</h3>
 
-<h3>Student Grade Calculator</h3>
-
-<input type="text" id="name" placeholder="Student Name">
-<input type="text" id="subject" placeholder="Subject">
-<input type="number" id="score" placeholder="Score">
-
-<br>
-
-<button onclick="grade()">Calculate Grade</button>
-
-<p id="gradeResult" class="result"></p>
-
-<hr>
-
-<h3>Calculator</h3>
-
-<input type="number" id="num1" placeholder="First number">
-<input type="number" id="num2" placeholder="Second number">
+<input id="name" placeholder="Student Name">
+<input id="subject" placeholder="Subject">
+<input id="score" type="number" placeholder="Score">
+<input id="total" type="number" placeholder="Total Score">
 
 <br>
 
-<button onclick="calc('add')">Add</button>
-<button onclick="calc('subtract')">Subtract</button>
-<button onclick="calc('multiply')">Multiply</button>
-<button onclick="calc('divide')">Divide</button>
+<button onclick="addStudent()">Add Student</button>
 
-<p id="calcResult" class="result"></p>
+<h3>Student List</h3>
 
-<hr>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Subject</th>
+<th>Score</th>
+<th>Percentage</th>
+<th>Grade</th>
+<th>Status</th>
+<th>Action</th>
+</tr>
+</thead>
 
-<h3>Hello API</h3>
-<button onclick="hello()">Say Hello</button>
-<p id="helloResult"></p>
+<tbody id="studentTable">
+</tbody>
 
-<hr>
-
-<h3>View API Routes</h3>
-<button onclick="routes()">Show Routes</button>
-<pre id="routesResult"></pre>
+</table>
 
 </div>
 
 <script>
 
-function grade(){
+function loadStudents(){
 
-let name = document.getElementById("name").value
-let subject = document.getElementById("subject").value
-let score = document.getElementById("score").value
+fetch("/students")
+.then(res=>res.json())
+.then(data=>{
 
-fetch("/grade/" + score + "/" + name + "/" + subject)
-.then(res => res.json())
-.then(data =>{
+let table=""
 
-document.getElementById("gradeResult").innerText =
-"Name: " + data.name +
-" | Subject: " + data.subject +
-" | Score: " + data.score +
-" | Grade: " + data.grade +
-" | Status: " + data.status
+data.forEach((s,i)=>{
+
+table+=`
+<tr>
+<td>${s.name}</td>
+<td>${s.subject}</td>
+<td>${s.score}/${s.total}</td>
+<td>${s.percentage}%</td>
+<td>${s.grade}</td>
+<td>${s.status}</td>
+<td>
+<button onclick="deleteStudent(${i})">Delete</button>
+</td>
+</tr>
+`
+
+})
+
+document.getElementById("studentTable").innerHTML=table
 
 })
 
 }
 
-function calc(type){
+function addStudent(){
 
-let n1 = document.getElementById("num1").value
-let n2 = document.getElementById("num2").value
+let name=document.getElementById("name").value
+let subject=document.getElementById("subject").value
+let score=document.getElementById("score").value
+let total=document.getElementById("total").value
 
-fetch("/" + type + "/" + n1 + "/" + n2)
-.then(res => res.json())
-.then(data =>{
-document.getElementById("calcResult").innerText =
-"Result: " + data.result
+fetch("/add_student",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({name,subject,score,total})
+})
+.then(res=>res.json())
+.then(data=>{
+loadStudents()
 })
 
 }
 
-function hello(){
-fetch("/hello")
-.then(res => res.json())
-.then(data =>{
-document.getElementById("helloResult").innerText = data.message
+function deleteStudent(id){
+
+fetch("/delete_student/"+id,{
+method:"DELETE"
 })
+.then(res=>res.json())
+.then(data=>{
+loadStudents()
+})
+
 }
 
-function routes(){
-fetch("/routes")
-.then(res => res.json())
-.then(data =>{
-document.getElementById("routesResult").innerText =
-JSON.stringify(data, null, 2)
-})
-}
+loadStudents()
 
 </script>
 
 </body>
+
 </html>
+
 """
 
-# ----------------------------
-# Home route
-# ----------------------------
 @app.route("/")
 def home():
     return render_template_string(html)
 
-# ----------------------------
-# Hello route
-# ----------------------------
-@app.route("/hello")
-def hello():
-    return jsonify({"message": "Hello from my API!"})
+@app.route("/students")
+def get_students():
+    return jsonify(students)
 
-# ----------------------------
-# Grade calculator with name and subject
-# ----------------------------
-@app.route("/grade/<int:score>/<name>/<subject>")
-def grade(score, name, subject):
+@app.route("/add_student", methods=["POST"])
+def add_student():
 
-    if score >= 90:
-        grade_letter = "A"
-    elif score >= 80:
-        grade_letter = "B"
-    elif score >= 70:
-        grade_letter = "C"
-    elif score >= 60:
-        grade_letter = "D"
+    data=request.json
+
+    name=data["name"]
+    subject=data["subject"]
+    score=int(data["score"])
+    total=int(data["total"])
+
+    percentage=(score/total)*100
+
+    if percentage>=90:
+        grade="A"
+    elif percentage>=80:
+        grade="B"
+    elif percentage>=70:
+        grade="C"
+    elif percentage>=60:
+        grade="D"
     else:
-        grade_letter = "F"
+        grade="F"
 
-    status = "Pass" if score >= 60 else "Fail"
+    status="Pass" if percentage>=60 else "Fail"
 
-    return jsonify({
-        "name": name,
-        "subject": subject,
-        "score": score,
-        "grade": grade_letter,
-        "status": status
-    })
+    student={
+        "name":name,
+        "subject":subject,
+        "score":score,
+        "total":total,
+        "percentage":round(percentage,2),
+        "grade":grade,
+        "status":status
+    }
 
-# ----------------------------
-# Addition
-# ----------------------------
-@app.route("/add/<int:num1>/<int:num2>")
-def add(num1, num2):
-    return jsonify({"result": num1 + num2})
+    students.append(student)
 
-# ----------------------------
-# Subtraction
-# ----------------------------
-@app.route("/subtract/<int:num1>/<int:num2>")
-def subtract(num1, num2):
-    return jsonify({"result": num1 - num2})
+    return jsonify({"message":"Student added"})
 
-# ----------------------------
-# Multiplication
-# ----------------------------
-@app.route("/multiply/<int:num1>/<int:num2>")
-def multiply(num1, num2):
-    return jsonify({"result": num1 * num2})
+@app.route("/delete_student/<int:id>", methods=["DELETE"])
+def delete_student(id):
 
-# ----------------------------
-# Division
-# ----------------------------
-@app.route("/divide/<int:num1>/<int:num2>")
-def divide(num1, num2):
+    students.pop(id)
 
-    if num2 == 0:
-        return jsonify({"error": "Division by zero"}), 400
+    return jsonify({"message":"Deleted"})
 
-    return jsonify({"result": num1 / num2})
-
-# ----------------------------
-# Routes list
-# ----------------------------
-@app.route("/routes")
-def routes():
-
-    routes_table = [
-        {"endpoint": "/", "description": "Main UI"},
-        {"endpoint": "/hello", "description": "Hello message"},
-        {"endpoint": "/grade/<score>/<name>/<subject>", "description": "Student grade calculator"},
-        {"endpoint": "/add/<num1>/<num2>", "description": "Addition"},
-        {"endpoint": "/subtract/<num1>/<num2>", "description": "Subtraction"},
-        {"endpoint": "/multiply/<num1>/<num2>", "description": "Multiplication"},
-        {"endpoint": "/divide/<num1>/<num2>", "description": "Division"}
-    ]
-
-    return jsonify(routes_table)
-
-# ----------------------------
-# Run Flask
-# ----------------------------
 if __name__ == "__main__":
     app.run(debug=True)
