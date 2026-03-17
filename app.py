@@ -5,7 +5,7 @@ app = Flask(__name__)
 
 # --- Initialize Database ---
 def init_db():
-    conn = sqlite3.connect("students.db")
+    conn = sqlite3.connect("students.db")  # Creates students.db automatically if it doesn't exist
     c = conn.cursor()
     c.execute("""
         CREATE TABLE IF NOT EXISTS students (
@@ -96,56 +96,59 @@ padding:8px;
 </div>
 <script>
 function loadStudents(){
-fetch("/students")
-.then(res=>res.json())
-.then(data=>{
-let table=""
-data.forEach((s,i)=>{
-table+=`
-<tr>
-<td>${s.name}</td>
-<td>${s.subject}</td>
-<td>${s.score}/${s.total}</td>
-<td>${s.percentage}%</td>
-<td>${s.grade}</td>
-<td>${s.status}</td>
-<td>
-<button onclick="deleteStudent(${s.id})">Delete</button>
-</td>
-</tr>
-`
-})
-document.getElementById("studentTable").innerHTML=table
-})
+    fetch("/students")
+    .then(res=>res.json())
+    .then(data=>{
+        let table=""
+        data.forEach((s)=>{
+            table+=`
+            <tr>
+            <td>${s.name}</td>
+            <td>${s.subject}</td>
+            <td>${s.score}/${s.total}</td>
+            <td>${s.percentage}%</td>
+            <td>${s.grade}</td>
+            <td>${s.status}</td>
+            <td>
+            <button onclick="deleteStudent(${s.id})">Delete</button>
+            </td>
+            </tr>
+            `
+        })
+        document.getElementById("studentTable").innerHTML=table
+    })
 }
+
 function addStudent(){
-let name=document.getElementById("name").value
-let subject=document.getElementById("subject").value
-let score=document.getElementById("score").value
-let total=document.getElementById("total").value
-fetch("/add_student",{
-method:"POST",
-headers:{"Content-Type":"application/json"},
-body:JSON.stringify({name,subject,score,total})
-})
-.then(res=>res.json())
-.then(data=>{
-document.getElementById("name").value=""
-document.getElementById("subject").value=""
-document.getElementById("score").value=""
-document.getElementById("total").value=""
-loadStudents()
-})
+    let name=document.getElementById("name").value
+    let subject=document.getElementById("subject").value
+    let score=document.getElementById("score").value
+    let total=document.getElementById("total").value
+    fetch("/add_student",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({name,subject,score,total})
+    })
+    .then(res=>res.json())
+    .then(data=>{
+        document.getElementById("name").value=""
+        document.getElementById("subject").value=""
+        document.getElementById("score").value=""
+        document.getElementById("total").value=""
+        loadStudents()
+    })
 }
+
 function deleteStudent(id){
-fetch("/delete_student/"+id,{
-method:"DELETE"
-})
-.then(res=>res.json())
-.then(data=>{
-loadStudents()
-})
+    fetch("/delete_student/"+id,{
+        method:"DELETE"
+    })
+    .then(res=>res.json())
+    .then(data=>{
+        loadStudents()
+    })
 }
+
 loadStudents()
 </script>
 </body>
